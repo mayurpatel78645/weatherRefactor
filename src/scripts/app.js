@@ -57,7 +57,7 @@ const renderDayForecast = (dayObjectsArray) => {
   }
 };
 
-const currentWeatherData = async() => {
+const currentWeatherData = async(latitude, longitude) => {
   const data = await getCurrentWeather(latitude, longitude);
   const conditions = {
     temperature: Math.round(data.main.temp),
@@ -67,10 +67,12 @@ const currentWeatherData = async() => {
   return conditions;
 }
 
+
+
 const getLocation = async() => {
-  navigator.geolocation.getCurrentPosition((position) => {
+  navigator.geolocation.getCurrentPosition(async(position) => {
     const { latitude, longitude } = position.coords;
-    const conditions =  await currentWeatherData();
+    const conditions = await currentWeatherData(latitude, longitude);
     renderCurrentConditions(conditions);
   
     get5DayForecast(latitude, longitude).then((data) => {
@@ -121,3 +123,4 @@ const getLocation = async() => {
     });
   });
 }
+getLocation()
