@@ -57,61 +57,67 @@ const renderDayForecast = (dayObjectsArray) => {
   }
 };
 
-navigator.geolocation.getCurrentPosition((position) => {
-  const { latitude, longitude } = position.coords;
-  getCurrentWeather(latitude, longitude).then((data) => {
-    const conditions = {
-      temperature: Math.round(data.main.temp),
-      description: data.weather[0].description,
-      iconId: data.weather[0].icon,
-    };
+const currentWeatherData = async() => {
+  const data = await getCurrentWeather(latitude, longitude);
+  const conditions = {
+    temperature: Math.round(data.main.temp),
+    description: data.weather[0].description,
+    iconId: data.weather[0].icon,
+  };
+  return conditions;
+}
+
+const getLocation = async() => {
+  navigator.geolocation.getCurrentPosition((position) => {
+    const { latitude, longitude } = position.coords;
+    const conditions =  await currentWeatherData();
     renderCurrentConditions(conditions);
-  });
-
-  get5DayForecast(latitude, longitude).then((data) => {
-    const allData = [...data.list];
-    const days = {};
-
-    const today = new Date().toLocaleString('en-CA', { weekday: 'long' });
-
-    allData.forEach((reading) => {
-      const readingDate = new Date(reading.dt_txt + ' UTC').toLocaleString(
-        'en-CA',
-        { weekday: 'long' }
-      );
-      if (days[readingDate]) {
-        days[readingDate].push(reading);
-      } else {
-        days[readingDate] = [];
-        days[readingDate].push(reading);
+  
+    get5DayForecast(latitude, longitude).then((data) => {
+      const allData = [...data.list];
+      const days = {};
+  
+      const today = new Date().toLocaleString('en-CA', { weekday: 'long' });
+  
+      allData.forEach((reading) => {
+        const readingDate = new Date(reading.dt_txt + ' UTC').toLocaleString(
+          'en-CA',
+          { weekday: 'long' }
+        );
+        if (days[readingDate]) {
+          days[readingDate].push(reading);
+        } else {
+          days[readingDate] = [];
+          days[readingDate].push(reading);
+        }
+      });
+  
+      const dayConditionsObjects = [];
+      for (let day in days) {
+        const midPoint = Math.floor(days[day].length / 2);
+        const dayConditions = {
+          name: day,
+          iconId: days[day][midPoint].weather[0].icon,
+          description: days[day][midPoint].weather[0].description,
+          highTemp: -999,
+          lowTemp: 999,
+        };
+  
+        for (let reading of days[day]) {
+          if (reading.main.temp_min < dayConditions.lowTemp) {
+            dayConditions.lowTemp = Math.round(reading.main.temp_min);
+          }
+  
+          if (reading.main.temp_max > dayConditions.highTemp) {
+            dayConditions.highTemp = Math.round(reading.main.temp_max);
+          }
+        }
+  
+        if (dayConditions.name !== today) {
+          dayConditionsObjects.push(dayConditions);
+        }
       }
+      renderDayForecast(dayConditionsObjects);
     });
-
-    const dayConditionsObjects = [];
-    for (let day in days) {
-      const midPoint = Math.floor(days[day].length / 2);
-      const dayConditions = {
-        name: day,
-        iconId: days[day][midPoint].weather[0].icon,
-        description: days[day][midPoint].weather[0].description,
-        highTemp: -999,
-        lowTemp: 999,
-      };
-
-      for (let reading of days[day]) {
-        if (reading.main.temp_min < dayConditions.lowTemp) {
-          dayConditions.lowTemp = Math.round(reading.main.temp_min);
-        }
-
-        if (reading.main.temp_max > dayConditions.highTemp) {
-          dayConditions.highTemp = Math.round(reading.main.temp_max);
-        }
-      }
-
-      if (dayConditions.name !== today) {
-        dayConditionsObjects.push(dayConditions);
-      }
-    }
-    renderDayForecast(dayConditionsObjects);
   });
-});
+}
