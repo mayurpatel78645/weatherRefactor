@@ -1,7 +1,5 @@
 const success = (position) => {
-  const apiKey = 'cc42663f6c57ef798f9e29193e9b86f4';
-  const baseUrl = 'https://api.openweathermap.org/data/2.5/';
-  const unitsParam = 'units=metric';
+  const { baseUrl, apiKey, unitsParam } = urlData();
   const { latitude, longitude } = position.coords;
   const currentWeatherUrl = `${baseUrl}weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&${unitsParam}`;
   const forecastUrl = `${baseUrl}forecast?lat=${latitude}&lon=${longitude}&appid=${apiKey}&${unitsParam}`;
@@ -11,6 +9,13 @@ const success = (position) => {
 
 const error = () => {
   console.error('Unable to retrieve location');
+}
+
+function urlData() {
+  const apiKey = 'cc42663f6c57ef798f9e29193e9b86f4';
+  const baseUrl = 'https://api.openweathermap.org/data/2.5/';
+  const unitsParam = 'units=metric';
+  return { baseUrl, apiKey, unitsParam };
 }
 
 const getData = async(url) => {
@@ -38,12 +43,8 @@ const getDayConditions = (days, day) => {
 
 const handleTemp = (days, day, dayConditions) => {
   days[day].forEach(reading => {
-    if (reading.main.temp_min < dayConditions.lowTemp) {
-      dayConditions.lowTemp = Math.round(reading.main.temp_min);
-    }
-    if (reading.main.temp_max > dayConditions.highTemp) {
-      dayConditions.highTemp = Math.round(reading.main.temp_max);
-    }
+    handleLowTemp(reading, dayConditions);
+    handleHighTemp(reading, dayConditions);
   }) 
 }
 
@@ -61,6 +62,18 @@ const renderCurrentWeather = (conditions) => {
   currentConditionsElement.innerHTML = '';
   const htmlString = currentWeatherHtml(conditions);
   currentConditionsElement.insertAdjacentHTML('beforeend', htmlString);
+}
+
+function handleHighTemp(reading, dayConditions) {
+  if (reading.main.temp_max > dayConditions.highTemp) {
+    dayConditions.highTemp = Math.round(reading.main.temp_max);
+  }
+}
+
+function handleLowTemp(reading, dayConditions) {
+  if (reading.main.temp_min < dayConditions.lowTemp) {
+    dayConditions.lowTemp = Math.round(reading.main.temp_min);
+  }
 }
 
 function currentWeatherHtml(conditions) {
